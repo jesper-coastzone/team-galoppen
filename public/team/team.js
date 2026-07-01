@@ -18,6 +18,7 @@
     });
   }
   TG.onState((st) => { S = st; render(); });
+  render(); // vis join-skaerm straks ved load
 
   // ---------- render ----------
   function render() {
