@@ -55,9 +55,26 @@
   API.check = (res) => { if (res && res.ok === false) toast(res.error || 'Der skete en fejl.', 'err'); return res; };
 
   API.motif = {
-    compass: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><circle cx="32" cy="32" r="30" fill="${fill || '#C9A227'}"/><path d="M32 12 L38 30 L32 52 L26 30 Z" fill="#FAF6EA"/><circle cx="32" cy="32" r="3" fill="#1F3E63"/></svg>`,
+    // "compass" tegner nu en hestesko (brand-motiv). Noglenavnet bevares for at undgaa aendringer i kaldesteder.
+    compass: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M22 14 C10 24 10 43 24 53 C29 56 35 56 40 53 C54 43 54 24 42 14" fill="none" stroke="${fill || '#C9A227'}" stroke-width="9" stroke-linecap="round"/></svg>`,
+    horseshoe: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M22 14 C10 24 10 43 24 53 C29 56 35 56 40 53 C54 43 54 24 42 14" fill="none" stroke="${fill || '#C9A227'}" stroke-width="9" stroke-linecap="round"/></svg>`,
     horse: (fill) => `<svg viewBox="0 0 64 64" width="100%" height="100%"><path fill="${fill || '#1F3E63'}" d="M20 54 L22 34 C16 32 12 26 14 18 C18 22 22 22 26 20 C28 12 36 8 44 12 C42 14 42 16 44 18 L52 20 C50 26 44 30 38 30 L40 54 L34 54 L32 38 L30 54 Z"/></svg>`,
   };
+
+  // Assets: appen loader billeder fra /assets. Skift filerne ud (samme navne) for at opgradere grafikken.
+  API.ASSETS = {
+    'hestesko':'hestesko.png','hest-silhuet':'hest-silhuet.png','hest-markoer':'hest-markoer.png',
+    'hest-markoer-silhuet':'hest-markoer-silhuet.png','hammer-auktion':'hammer-auktion.png',
+    'puslespil-opgaver':'puslespil-opgaver.png','diagram-investering':'diagram-investering.png',
+    'maalflag':'maalflag.png','finish-stripe':'finish-stripe.png','stald-badge-blank':'stald-badge-blank.png',
+    'terning':'terning.png','app-ikon':'app-ikon.png','penge':'penge.png','jockey':'jockey.png',
+    'hest-opgradering':'hest-opgradering.png','pokal':'pokal.png',
+    'vaeddeloebsbane':'vaeddeloebsbane.png','hest-og-jockey':'hest-og-jockey.png','hero-baggrund':'hero-baggrund.png',
+  };
+  API.assetURL = (name) => '/assets/' + (API.ASSETS[name] || (name + '.png'));
+  API.assetTag = (name, style) => `<img src="${API.assetURL(name)}" alt="${name}" style="width:100%;height:100%;object-fit:contain;${style || ''}">`;
+  API.assetImg = (name, opts) => el('img', { src: API.assetURL(name), alt: (opts && opts.alt) || name, style: 'object-fit:contain;' + ((opts && opts.style) || '') });
+  API.tintedAsset = (name, color, opts) => el('div', { style: `background-color:${color};-webkit-mask:url(${API.assetURL(name)}) center/contain no-repeat;mask:url(${API.assetURL(name)}) center/contain no-repeat;${(opts && opts.style) || ''}` });
 
   API.countdown = (endsAt) => {
     if (!endsAt) return '';
