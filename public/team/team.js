@@ -184,11 +184,27 @@
   function auctionTile(ex, a) {
     const me = S.me;
     const myBid = (a.bids || []).find((b) => b.exerciseId === ex.id && b.teamId === me.id);
-    const t = el('div.ex-tile' + (ex.currentOwnerTeamId === me.id ? '.owned' : ''));
+    const top = (a.topBids || []).find((b) => b.exerciseId === ex.id);
+    const iLead = top && top.teamId === me.id;
+    const outbid = myBid && top && !iLead && top.amount > myBid.amount;
+    const t = el('div.ex-tile' + (ex.currentOwnerTeamId === me.id ? '.owned' : '') + (outbid ? '.outbid' : ''));
     t.appendChild(el('div.row.between', {}, [el('span.cat.' + ex.category, { text: catName(ex.category) }), ex.currentOwnerTeamId ? el('span.chip', { text: ownerName(ex.currentOwnerTeamId) }) : el('span.chip.gold', { text: 'Ledig' })]));
     t.appendChild(el('h3', { text: ex.name, style: 'margin:6px 0 2px' }));
     t.appendChild(el('p.muted', { text: ex.short, style: 'font-size:13px;min-height:34px' }));
-    if (ex.lastPurchasePrice) t.appendChild(el('div.muted', { style: 'font-size:12px', text: 'Sidst solgt: ' + sd(ex.lastPurchasePrice) }));
+    // Live budstatus — synligt for alle så man kan byde igen ved overbud.
+    if (a.status === 'open' || a.status === 'closed') {
+      if (top) {
+        t.appendChild(el('div.row.between', { style: 'margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--cream)' }, [
+          el('span.muted', { style: 'font-size:12px;text-transform:uppercase;letter-spacing:.5px', text: 'Højeste bud' }),
+          el('span.num', { style: 'font-weight:800', text: sd(top.amount) }),
+        ]));
+        t.appendChild(el('div.muted', { style: 'font-size:12px;margin-top:2px', text: iLead ? 'I fører 🏆' : 'Fører: ' + ownerName(top.teamId) }));
+      } else {
+        t.appendChild(el('div.muted', { style: 'font-size:12px;margin-top:6px;font-style:italic', text: 'Ingen bud endnu' }));
+      }
+      if (outbid) t.appendChild(el('div.chip.warn', { style: 'margin-top:6px', text: 'I er overbudt — byd igen!' }));
+    }
+    if (ex.lastPurchasePrice) t.appendChild(el('div.muted', { style: 'font-size:12px;margin-top:4px', text: 'Sidst solgt: ' + sd(ex.lastPurchasePrice) }));
     if (a.status === 'open') {
       const amt = el('input', { type: 'number', min: '1', placeholder: 'Bud i SD', value: ui.bids[ex.id] || '', style: 'margin-top:8px' });
       amt.addEventListener('input', () => { ui.bids[ex.id] = amt.value; });
