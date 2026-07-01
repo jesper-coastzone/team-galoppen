@@ -216,11 +216,26 @@
       (a.results || []).forEach((r) => list.appendChild(el('div.reveal-row', {}, [el('span.num', { text: '' }), el('span', { text: r.stableName + ' → ' + r.exerciseName }), el('span.num', { text: sd(r.amount) })])));
       c.appendChild(list); return c;
     }
+    const topByEx = {}; (a.topBids || []).forEach((b) => { topByEx[b.exerciseId] = b; });
     const grid = el('div.teamgrid', { style: 'grid-template-columns:repeat(4,1fr);margin-top:1vh' });
     a.exercises.forEach((ex) => {
-      const card = el('div.card'); card.appendChild(el('div.cat ' + ex.category, { style: 'font-size:1vw;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold)', text: ex.name }));
-      card.appendChild(el('div', { style: 'font-size:1vw;color:var(--text-dim);min-height:3vw', text: ex.short }));
-      card.appendChild(ex.currentOwnerTeamId ? el('span.chip', { text: teamName(ex.currentOwnerTeamId) }) : el('span.chip.gold', { text: 'Ledig' }));
+      const card = el('div.card', { style: 'display:flex;flex-direction:column;gap:.4vw' });
+      card.appendChild(el('div.cat ' + ex.category, { style: 'font-size:1.1vw;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold)', text: ex.name }));
+      card.appendChild(el('div', { style: 'font-size:.95vw;color:var(--text-dim);min-height:2.6vw', text: ex.short }));
+      const top = topByEx[ex.id];
+      const bidBox = el('div', { style: 'margin-top:auto;padding-top:.4vw;border-top:1px solid var(--line)' });
+      if (top) {
+        bidBox.appendChild(el('div', { style: 'font-size:.8vw;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint)', text: 'Højeste bud' }));
+        bidBox.appendChild(el('div.big-num', { style: 'font-size:2.4vw;color:var(--burgundy);line-height:1.1', text: sd(top.amount) }));
+        bidBox.appendChild(el('div.row', { style: 'align-items:center;gap:.5vw;font-size:1.1vw;font-weight:700' }, [
+          el('span', { style: `display:inline-block;width:1vw;height:1vw;border-radius:50%;background:${teamColor(top.teamId)}` }),
+          el('span', { text: teamName(top.teamId) }),
+        ]));
+      } else {
+        bidBox.appendChild(el('div', { style: 'font-size:1.1vw;color:var(--text-faint);font-style:italic', text: 'Ingen bud endnu' }));
+      }
+      card.appendChild(bidBox);
+      if (ex.currentOwnerTeamId) card.appendChild(el('span.chip', { style: 'align-self:flex-start;font-size:.8vw', text: 'Ejer nu: ' + teamName(ex.currentOwnerTeamId) }));
       grid.appendChild(card);
     });
     c.appendChild(grid);
@@ -315,6 +330,7 @@
   }
 
   function teamName(id) { const t = S.teams.find((x) => x.id === id); return t ? t.stableName : '—'; }
+  function teamColor(id) { const t = S.teams.find((x) => x.id === id); return t && t.color ? t.color.hex : 'var(--navy)'; }
 
   // opdater countdowns hvert sekund
   setInterval(() => { document.querySelectorAll('[data-endsat]').forEach((n) => { n.textContent = TG.countdown(Number(n.getAttribute('data-endsat'))); }); }, 500);
