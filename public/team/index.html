@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Team Galoppen — Tablet</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1F3E63">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Derby">
+<link rel="apple-touch-icon" href="/icon.png?size=180">
+<link rel="icon" href="/icon.png?size=64">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/components.css">
+<style>
+  body { background: var(--cream); }
+  .topbar { position: sticky; top: 0; z-index: 10; background: var(--navy); color: var(--on-navy); padding: 10px 14px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow); }
+  .topbar .name { font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+  .topbar .metrics { margin-left: auto; display: flex; gap: 16px; }
+  .topbar .metrics .k { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; opacity: .7; }
+  .topbar .metrics .v { font-family: var(--font-num); font-weight: 700; font-size: 20px; }
+  .app { max-width: 820px; margin: 0 auto; padding: 16px 16px 90px; }
+  .big-center { min-height: 70vh; display: grid; place-items: center; text-align: center; }
+  .big-center h1 { font-size: clamp(34px, 9vw, 64px); }
+  .navbar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--line); display: flex; overflow-x: auto; z-index: 10; }
+  .navbar button { flex: 1 0 auto; min-width: 84px; border: 0; background: none; padding: 10px 8px; font-weight: 700; color: var(--text-dim); font-size: 12px; cursor: pointer; }
+  .navbar button.active { color: var(--navy); box-shadow: inset 0 -3px 0 var(--gold); }
+  .ex-tile { text-align: left; border: 2px solid var(--line); border-radius: 14px; padding: 14px; background: #fff; cursor: pointer; }
+  .ex-tile.owned { border-color: var(--gold); box-shadow: 0 0 0 3px #f6eec9; }
+  .cat { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; font-weight: 800; }
+  .cat.money { color: var(--gold); } .cat.jockey { color: var(--turf); } .cat.horse { color: var(--burgundy); }
+  .list-move { user-select: none; }
+  .list-move .item { display: flex; align-items: center; gap: 10px; padding: 12px; border: 2px solid var(--line); border-radius: 12px; background: #fff; margin-bottom: 8px; }
+  .dice { font-family: var(--font-num); font-weight: 700; font-size: 64px; color: var(--navy); }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/client.js"></script>
+  <script src="/team/team.js"></script>
+</body>
+</html>

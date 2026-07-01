@@ -1,0 +1,492 @@
+/* team.js — tablet-app. Følger automatisk den aktuelle fase; viser altid hvad holdet skal nu. */
+(function () {
+  const { el, clear, sd, money, toast, check } = TG;
+  const root = document.getElementById('root');
+  let S = null;              // seneste server-state
+  const ui = { sub: 'tasks', bids: {}, tradeTo: null, tradeExtra: 0, tip13: null, tidslinje: null, dyst: {} };
+
+  // ---------- connection ----------
+  const urlCode = new URLSearchParams(location.search).get('code');
+  const savedCode = urlCode || TG.load('tg_code');
+  const savedTeam = TG.load('tg_teamId');
+  if (savedCode) doJoin(savedCode, savedTeam);
+
+  function doJoin(code, teamId) {
+    TG.join('team', { code: code.toUpperCase(), teamId }).then((res) => {
+      if (!res.ok) { toast(res.error || 'Kunne ikke tilslutte.', 'err'); TG.del('tg_code'); TG.del('tg_teamId'); S = null; render(); return; }
+      TG.save('tg_code', res.code); if (res.teamId) TG.save('tg_teamId', res.teamId);
+    });
+  }
+  TG.onState((st) => { S = st; render(); });
+
+  // ---------- render ----------
+  function render() {
+    clear(root);
+    if (!S || !S.me) { root.appendChild(joinView()); return; }
+    root.appendChild(topbar());
+    const app = el('div.app');
+    app.appendChild(bodyForMode());
+    root.appendChild(app);
+    if (S.slide.tabletMode === 'round-dashboard') root.appendChild(navbar());
+    incomingTradeToast();
+  }
+
+  function joinView() {
+    const wrap = el('div.big-center');
+    const card = el('div.card', { style: 'max-width:420px;width:100%' });
+    card.appendChild(el('div.eyebrow', { text: 'Stald-tablet' }));
+    card.appendChild(el('h1', { text: 'The Great Team Derby', style: 'font-size:34px;margin:8px 0 16px' }));
+    const inp = el('input', { type: 'text', placeholder: 'Spilkode (fx ABCDE)', maxlength: '6', style: 'text-transform:uppercase;text-align:center;font-size:26px;letter-spacing:4px' });
+    const btn = el('button.btn.xl', { text: 'Tilslut' });
+    btn.addEventListener('click', () => { if (inp.value.trim().length >= 4) doJoin(inp.value.trim()); else toast('Indtast en gyldig kode.', 'err'); });
+    card.appendChild(el('label.field', {}, [inp]));
+    card.appendChild(btn);
+    wrap.appendChild(card);
+    return wrap;
+  }
+
+  function topbar() {
+    const me = S.me;
+    const bar = el('div.topbar');
+    const b = el('div.badge', { style: `background:${me.color.hex}` , text: String(me.teamNumber) });
+    bar.appendChild(b);
+    bar.appendChild(el('div', {}, [el('div.name', { text: me.stableName }), el('div', { style: 'font-size:11px;opacity:.75', text: S.slide.title })]));
+    const m = el('div.metrics');
+    m.appendChild(metric('Kontant', sd(me.cash)));
+    m.appendChild(metric('Staldværdi', sd(me.totalValue)));
+    bar.appendChild(m);
+    return bar;
+  }
+  function metric(k, v) { return el('div.center', {}, [el('div.k', { text: k }), el('div.v', { text: v })]); }
+
+  function bodyForMode() {
+    switch (S.slide.tabletMode) {
+      case 'welcome': return centerMsg('Velkommen til<br>The Great Team Derby', 'Vent på værten…');
+      case 'stable-setup': return setupView();
+      case 'ready-wait': return centerMsg('I er klar!', 'Vent på de andre stalde…');
+      case 'pre-season': return preseasonView();
+      case 'warmup-race': return warmupView();
+      case 'auction': return auctionView();
+      case 'round-dashboard': return dashboardView();
+      case 'bank': return bankView();
+      case 'race': case 'final-race': return raceView();
+      case 'final-result': return finalResultView();
+      default: return centerMsg('Vent på værten…', '');
+    }
+  }
+
+  function centerMsg(title, sub) {
+    const w = el('div.big-center');
+    const c = el('div', {}, [el('h1', { html: title })]);
+    if (sub) c.appendChild(el('p.muted', { html: sub, style: 'margin-top:12px;font-size:18px' }));
+    w.appendChild(c);
+    return w;
+  }
+
+  // ---------- SETUP ----------
+  function setupView() {
+    const me = S.me;
+    const c = el('div.card');
+    c.appendChild(el('div.eyebrow', { text: 'Skab jeres stald' }));
+    c.appendChild(el('h1', { text: 'Navngiv jer', style: 'margin:6px 0 18px' }));
+    const f = {};
+    const mk = (lbl, key, val) => { const i = el('input', { type: 'text', value: val || '' }); f[key] = i; return el('label.field', {}, [el('span.lbl', { text: lbl }), i]); };
+    c.appendChild(mk('Staldnavn', 'stableName', me.stableName));
+    c.appendChild(mk('Hestens navn', 'horseName', me.horseName));
+    c.appendChild(mk('Jockeyens navn', 'jockeyName', me.jockeyName));
+    const save = el('button.btn.block', { text: 'Gem' });
+    save.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value }).then(() => toast('Gemt', 'ok')));
+    const ready = el('button.btn.gold.block', { text: me.ready ? '✓ Vi er klar (tryk for at fortryde)' : 'Vi er klar!' , style: 'margin-top:10px' });
+    ready.addEventListener('click', () => TG.emit('team:setStable', { stableName: f.stableName.value, horseName: f.horseName.value, jockeyName: f.jockeyName.value, ready: !me.ready }));
+    c.appendChild(save); c.appendChild(ready);
+    return c;
+  }
+
+  // ---------- PRE-SEASON ----------
+  function preseasonView() {
+    const c = el('div.col');
+    c.appendChild(head('Pre-season', 'Læs, forstå strategien og planlæg jeres første træk. Ingen belønninger endnu.'));
+    const items = [
+      ['Sådan vinder I', 'Den mest værdifulde stald vinder — ikke nødvendigvis løbsvinderen. Værdi = kontanter + hest + jockey + stald.'],
+      ['Auktion', 'Hver runde starter med en auktion. I byder på 7 special-øvelser. I kan kun eje én ad gangen — men den kan sælges videre.'],
+      ['Opgaver', 'Løs Tip en 13\'er, Tidslinje og Dyst for kontanter. Byg puslespillet for Derby-licens. Pynt hest og staldskilt til showcase.'],
+      ['Investering', 'Køb op i hest (top), jockey (bund) eller stald (sikker værdi). Hesten løfter terningens max, jockeyen dens min.'],
+      ['Løb', 'Slå terninger. Hesten løfter topniveauet, jockeyen bundniveauet. Præmier giver kontanter.'],
+    ];
+    items.forEach(([t, d]) => { const card = el('div.card'); card.appendChild(el('h3', { text: t })); card.appendChild(el('p.muted', { text: d, style: 'margin-top:6px' })); c.appendChild(card); });
+    return c;
+  }
+
+  // ---------- WARM-UP ----------
+  function warmupView() {
+    if (S.warmupPaid) return centerMsg('Startkapital modtaget!', 'I har fået <b>5.000 SD</b> i staldkassen.');
+    return centerMsg('Warm-up løb', 'Læn jer tilbage og nyd showet — bagefter får alle stalde startkapital.');
+  }
+
+  // ---------- AUCTION ----------
+  function auctionView() {
+    const a = S.auction;
+    const c = el('div.col');
+    const status = a.status === 'open' ? 'Auktionen er åben' : a.status === 'closed' ? 'Auktionen er lukket — afventer afgørelse' : a.status === 'resolved' ? 'Auktionen er afgjort' : 'Auktion';
+    c.appendChild(head('Auktion', status));
+    if (a.status === 'resolved') {
+      const res = el('div.card'); res.appendChild(el('h3', { text: 'Resultater' }));
+      (a.results || []).forEach((r) => res.appendChild(el('div.row.between', { style: 'padding:6px 0;border-bottom:1px dashed var(--line)' }, [el('span', { text: `${r.stableName} → ${r.exerciseName}` }), el('span.num', { text: sd(r.amount) })])));
+      c.appendChild(res);
+    }
+    const grid = el('div.grid', { style: 'grid-template-columns:1fr 1fr' });
+    a.exercises.forEach((ex) => grid.appendChild(auctionTile(ex, a)));
+    c.appendChild(grid);
+    return c;
+  }
+
+  function auctionTile(ex, a) {
+    const me = S.me;
+    const myBid = (a.bids || []).find((b) => b.exerciseId === ex.id && b.teamId === me.id);
+    const t = el('div.ex-tile' + (ex.currentOwnerTeamId === me.id ? '.owned' : ''));
+    t.appendChild(el('div.row.between', {}, [el('span.cat.' + ex.category, { text: catName(ex.category) }), ex.currentOwnerTeamId ? el('span.chip', { text: ownerName(ex.currentOwnerTeamId) }) : el('span.chip.gold', { text: 'Ledig' })]));
+    t.appendChild(el('h3', { text: ex.name, style: 'margin:6px 0 2px' }));
+    t.appendChild(el('p.muted', { text: ex.short, style: 'font-size:13px;min-height:34px' }));
+    if (ex.lastPurchasePrice) t.appendChild(el('div.muted', { style: 'font-size:12px', text: 'Sidst solgt: ' + sd(ex.lastPurchasePrice) }));
+    if (a.status === 'open') {
+      const amt = el('input', { type: 'number', min: '1', placeholder: 'Bud i SD', value: ui.bids[ex.id] || '', style: 'margin-top:8px' });
+      amt.addEventListener('input', () => { ui.bids[ex.id] = amt.value; });
+      const bid = el('button.btn.sm.gold.block', { text: myBid ? `Ændr bud (${money(myBid.amount)})` : 'Byd', style: 'margin-top:6px' });
+      bid.addEventListener('click', () => TG.emit('team:bid', { exerciseId: ex.id, amount: Number(amt.value) }).then((r) => { check(r); if (r.ok) toast('Bud afgivet', 'ok'); }));
+      t.appendChild(amt); t.appendChild(bid);
+      if (myBid) { const rm = el('button.btn.sm.ghost.block', { text: 'Fjern bud', style: 'margin-top:4px' }); rm.addEventListener('click', () => TG.emit('team:retractBid', { exerciseId: ex.id })); t.appendChild(rm); }
+    } else if (myBid) t.appendChild(el('div.chip.gold', { style: 'margin-top:8px', text: 'Dit bud: ' + sd(myBid.amount) }));
+    return t;
+  }
+
+  // ---------- DASHBOARD ----------
+  function navbar() {
+    const nav = el('div.navbar');
+    const tabs = [['tasks', 'Opgaver'], ['exercise', 'Min øvelse'], ['money', 'Penge'], ['trade', 'Byt'], ['house', 'Auktionshus'], ['invest', 'Invester'], ['bank', 'Bank']];
+    tabs.forEach(([k, l]) => { const b = el('button' + (ui.sub === k ? '.active' : ''), { text: l }); b.addEventListener('click', () => { ui.sub = k; render(); }); nav.appendChild(b); });
+    return nav;
+  }
+
+  function dashboardView() {
+    switch (ui.sub) {
+      case 'exercise': return exerciseView();
+      case 'money': return moneyView();
+      case 'trade': return tradeView();
+      case 'house': return houseView();
+      case 'invest': return investView();
+      case 'bank': return bankView();
+      default: return tasksView();
+    }
+  }
+
+  function tasksView() {
+    const me = S.me;
+    const c = el('div.col');
+    c.appendChild(head('Opgaver', 'Altid tilgængelige — prioritér frit.'));
+    const defs = [['puzzle', 'Puslespil', 'Fuldfør for Derby-licens.'], ['horseStyling', 'Pynt jeres hest', 'Bedømmes i showcase.'], ['stableSign', 'Design jeres staldskilt', 'Bedømmes i showcase.']];
+    defs.forEach(([id, name, desc]) => {
+      const st = me.taskStatus[id] || {};
+      const card = el('div.card');
+      card.appendChild(el('div.row.between', {}, [el('h3', { text: name }), st.completed ? el('span.chip.turf', { text: '✓ Godkendt' }) : st.pending ? el('span.chip.gold', { text: 'Afventer host' }) : null]));
+      card.appendChild(el('p.muted', { text: desc, style: 'margin:6px 0' }));
+      if (!st.completed) { const b = el('button.btn.sm', { text: st.pending ? 'Bad om godkendelse ✓' : 'Kald host til godkendelse', disabled: st.pending ? 'true' : null }); b.addEventListener('click', () => TG.emit('team:requestApproval', { taskId: id }).then(check)); card.appendChild(b); }
+      c.appendChild(card);
+    });
+    return c;
+  }
+
+  function exerciseView() {
+    const me = S.me;
+    const c = el('div.col');
+    c.appendChild(head('Min øvelse', 'Jeres ejede auktionsøvelse.'));
+    if (!me.ownedAuctionExerciseId) { c.appendChild(el('div.card', {}, [el('p.muted', { text: 'I ejer ingen auktionsøvelse lige nu. Byd på næste auktion eller byt jer til en.' })])); return c; }
+    const ex = S.auction.exercises.find((e) => e.id === me.ownedAuctionExerciseId);
+    const cd = cooldownLeft(ex.id);
+    const card = el('div.card');
+    card.appendChild(el('span.cat.' + ex.category, { text: catName(ex.category) }));
+    card.appendChild(el('h2', { text: ex.name, style: 'margin:4px 0' }));
+    card.appendChild(el('p.muted', { text: ex.description }));
+    card.appendChild(el('div.finish-stripe', { style: 'margin:12px 0' }));
+    if (ex.category === 'money') {
+      card.appendChild(el('div.row.between', {}, [el('span.muted', { text: 'Næste belønning' }), el('span.num', { style: 'font-size:24px;color:var(--gold)', text: sd(ex.nextReward) })]));
+      if (ex.progressive) card.appendChild(el('div.chip', { style: 'margin-top:8px', text: 'Niveau ' + (me.mindPuzzleLevel + 1) }));
+    } else {
+      card.appendChild(el('p', { text: ex.gives }));
+      card.appendChild(thresholdInfo(ex));
+      card.appendChild(el('div.row', { style: 'margin-top:6px' }, [el('span.chip.turf', { text: (ex.category === 'jockey' ? 'Jockey' : 'Hest') + '-niveau ' + (ex.category === 'jockey' ? me.jockeyLevel : me.horseLevel) })]));
+    }
+    const btn = el('button.btn.gold.block.lg', { text: cd ? `Cooldown ${cd}` : 'Kald instruktør — officielt forsøg', style: 'margin-top:14px', disabled: cd ? 'true' : null });
+    btn.setAttribute('data-cooldown', ex.id);
+    btn.addEventListener('click', () => TG.emit('team:exerciseAttempt', { exerciseId: ex.id }).then((r) => { check(r); if (r.ok) toast('Instruktør tilkaldt — vent på godkendelse.', 'ok'); }));
+    card.appendChild(btn);
+    if ((me.taskStatus[ex.id] || {}).pending) card.appendChild(el('div.chip.gold', { style: 'margin-top:8px', text: 'Afventer instruktørens vurdering' }));
+    c.appendChild(card);
+    return c;
+  }
+  function thresholdInfo(ex) {
+    if (!ex.thresholds) return el('span');
+    const order = ['pass', 'bronze', 'silver', 'gold'];
+    const row = el('div.row.wrap', { style: 'gap:6px;margin-top:8px' });
+    order.forEach((l) => { if (ex.thresholds[l] != null) row.appendChild(el('span.chip', { text: `${l}: ${ex.thresholds[l]}${ex.lowerIsBetter ? 's' : ''}` })); });
+    return row;
+  }
+
+  // ---------- MONEY TASKS ----------
+  function moneyView() {
+    const c = el('div.col');
+    c.appendChild(head('Pengeopgaver', 'Løs for kontanter. Cooldown efter hvert forsøg.'));
+    if (ui.tip13) { c.appendChild(tip13Card()); return c; }
+    if (ui.tidslinje) { c.appendChild(tidslinjeCard()); return c; }
+    // launchers
+    c.appendChild(taskLauncher('Tip en 13\'er', '13 spørgsmål — 100 SD pr. rigtige.', 'tip13', () => TG.emit('team:tip13Get').then((r) => { if (!r.ok) return check(r); ui.tip13 = { data: r, answers: {}, result: null }; render(); })));
+    c.appendChild(taskLauncher('Tidslinje', 'Sæt 5 begivenheder i rækkefølge — 300 SD.', 'tidslinje', () => TG.emit('team:tidslinjeGet').then((r) => { if (!r.ok) return check(r); ui.tidslinje = { data: r, order: r.items.slice(), result: null }; render(); })));
+    c.appendChild(dystCard());
+    return c;
+  }
+  function taskLauncher(name, desc, key, onStart) {
+    const cd = cooldownLeft(key);
+    const card = el('div.card');
+    card.appendChild(el('div.row.between', {}, [el('h3', { text: name }), cd ? el('span.chip.red', { text: 'Cooldown ' + cd, 'data-cooldown': key }) : null]));
+    card.appendChild(el('p.muted', { text: desc, style: 'margin:6px 0' }));
+    const b = el('button.btn.block', { text: 'Start', disabled: cd ? 'true' : null }); b.addEventListener('click', onStart); card.appendChild(b);
+    return card;
+  }
+  function tip13Card() {
+    const { data, result } = ui.tip13;
+    const card = el('div.card');
+    card.appendChild(el('div.row.between', {}, [el('h3', { text: 'Tip en 13\'er' }), backBtn(() => { ui.tip13 = null; render(); })]));
+    if (result) {
+      card.appendChild(el('div.center', { style: 'padding:20px' }, [el('div.stat.big', {}, [el('div.k', { text: 'Resultat' }), el('div.v', { text: result.correct + '/' + result.total })]), el('p', { style: 'margin-top:8px', html: '+ <b>' + sd(result.reward) + '</b>' })]));
+      const done = el('button.btn.block', { text: 'Færdig' }); done.addEventListener('click', () => { ui.tip13 = null; render(); }); card.appendChild(done);
+      return card;
+    }
+    data.questions.forEach((q) => {
+      const box = el('div', { style: 'margin-bottom:10px' });
+      box.appendChild(el('div', { style: 'font-weight:600', text: (q.i + 1) + '. ' + q.q }));
+      const row = el('div.row', { style: 'margin-top:4px' });
+      q.options.forEach((opt, oi) => { const b = el('button.btn.sm.ghost', { text: opt, style: 'flex:1' }); if (ui.tip13.answers[q.i] === oi) b.classList.add('gold'); b.addEventListener('click', () => { ui.tip13.answers[q.i] = oi; render(); }); row.appendChild(b); });
+      box.appendChild(row); card.appendChild(box);
+    });
+    const submit = el('button.btn.gold.block.lg', { text: 'Aflever' });
+    submit.addEventListener('click', () => { const answers = data.questions.map((q) => ui.tip13.answers[q.i]); TG.emit('team:tip13Submit', { answers }).then((r) => { if (!r.ok) return check(r); ui.tip13.result = r; render(); }); });
+    card.appendChild(submit);
+    return card;
+  }
+  function tidslinjeCard() {
+    const T = ui.tidslinje;
+    const card = el('div.card');
+    card.appendChild(el('div.row.between', {}, [el('h3', { text: 'Tidslinje' }), backBtn(() => { ui.tidslinje = null; render(); })]));
+    if (T.result) {
+      card.appendChild(el('div.center', { style: 'padding:16px' }, [el('h2', { text: T.result.success ? 'Korrekt! 🎉' : 'Ikke helt…' }), el('p', { style: 'margin-top:8px', html: T.result.success ? '+ <b>' + sd(T.result.reward) + '</b>' : 'Rigtig rækkefølge: ' + T.result.correctOrder.join(' → ') })]));
+      const done = el('button.btn.block', { text: 'Færdig' }); done.addEventListener('click', () => { ui.tidslinje = null; render(); }); card.appendChild(done);
+      return card;
+    }
+    card.appendChild(el('p.muted', { text: T.data.title, style: 'margin-bottom:8px' }));
+    const list = el('div.list-move');
+    T.order.forEach((it, idx) => {
+      const item = el('div.item');
+      item.appendChild(el('span.badge', { style: 'width:28px;height:28px;background:var(--navy)', text: String(idx + 1) }));
+      item.appendChild(el('span', { style: 'flex:1', text: it.label }));
+      const up = el('button.btn.sm.ghost', { text: '▲', disabled: idx === 0 ? 'true' : null }); up.addEventListener('click', () => { const a = T.order; [a[idx - 1], a[idx]] = [a[idx], a[idx - 1]]; render(); });
+      const dn = el('button.btn.sm.ghost', { text: '▼', disabled: idx === T.order.length - 1 ? 'true' : null }); dn.addEventListener('click', () => { const a = T.order; [a[idx + 1], a[idx]] = [a[idx], a[idx + 1]]; render(); });
+      item.appendChild(up); item.appendChild(dn); list.appendChild(item);
+    });
+    card.appendChild(list);
+    const submit = el('button.btn.gold.block.lg', { text: 'Aflever rækkefølge', style: 'margin-top:10px' });
+    submit.addEventListener('click', () => TG.emit('team:tidslinjeSubmit', { orderedIds: T.order.map((i) => i.id) }).then((r) => { if (!r.ok) return check(r); T.result = r; render(); }));
+    card.appendChild(submit);
+    return card;
+  }
+  function dystCard() {
+    const me = S.me;
+    const cd = cooldownLeft('dyst');
+    const card = el('div.card');
+    card.appendChild(el('h3', { text: 'Dyst' }));
+    card.appendChild(el('p.muted', { text: 'Udfordr en anden stald til estimerings-duel (bedst af 3).', style: 'margin:6px 0' }));
+    // aktive dueller
+    (S.duels || []).forEach((d) => card.appendChild(duelRow(d)));
+    if (!(S.duels || []).some((d) => ['pending', 'active'].includes(d.status))) {
+      const sel = el('select');
+      sel.appendChild(el('option', { value: '', text: 'Vælg modstander…' }));
+      S.teams.filter((t) => t.id !== me.id && t.joined).forEach((t) => sel.appendChild(el('option', { value: t.id, text: t.stableName })));
+      const b = el('button.btn.block', { text: 'Udfordr', disabled: cd ? 'true' : null, style: 'margin-top:8px' });
+      if (cd) b.setAttribute('data-cooldown', 'dyst');
+      b.addEventListener('click', () => { if (!sel.value) return toast('Vælg en modstander.', 'err'); TG.emit('team:duelChallenge', { toTeamId: sel.value }).then(check); });
+      card.appendChild(sel); card.appendChild(cd ? el('div.chip.red', { style: 'margin-top:6px', text: 'Cooldown ' + cd, 'data-cooldown': 'dyst' }) : b);
+    }
+    return card;
+  }
+  function duelRow(d) {
+    const me = S.me;
+    const box = el('div.card', { style: 'background:var(--cream);margin-top:8px' });
+    box.appendChild(el('div.row.between', {}, [el('b', { text: d.fromStable + ' vs ' + d.toStable }), el('span.chip', { text: d.status })]));
+    if (d.status === 'pending' && d.toTeamId === me.id) {
+      const row = el('div.row', { style: 'margin-top:8px' });
+      const acc = el('button.btn.sm.turf', { text: 'Tag imod' }); acc.addEventListener('click', () => TG.emit('team:duelRespond', { duelId: d.id, accept: true }).then(check));
+      const dec = el('button.btn.sm.ghost', { text: 'Afvis' }); dec.addEventListener('click', () => TG.emit('team:duelRespond', { duelId: d.id, accept: false }));
+      row.appendChild(acc); row.appendChild(dec); box.appendChild(row);
+    } else if (d.status === 'pending') box.appendChild(el('p.muted', { style: 'margin-top:6px', text: 'Afventer modstanderens svar…' }));
+    else if (d.status === 'active') {
+      const mine = d.submitted[me.id];
+      if (mine) box.appendChild(el('p.muted', { style: 'margin-top:6px', text: 'Afventer den anden stald…' }));
+      else {
+        ui.dyst[d.id] = ui.dyst[d.id] || {};
+        d.questions.forEach((q, i) => { const inp = el('input', { type: 'number', placeholder: q.unit, value: ui.dyst[d.id][i] || '', style: 'margin-top:6px' }); inp.addEventListener('input', () => { ui.dyst[d.id][i] = inp.value; }); box.appendChild(el('div', { style: 'font-weight:600;margin-top:8px', text: (i + 1) + '. ' + q.q })); box.appendChild(inp); });
+        const sb = el('button.btn.gold.block', { text: 'Aflever svar', style: 'margin-top:10px' });
+        sb.addEventListener('click', () => TG.emit('team:duelSubmit', { duelId: d.id, answers: d.questions.map((q, i) => Number(ui.dyst[d.id][i] || 0)) }).then(check));
+        box.appendChild(sb);
+      }
+    } else if (d.status === 'resolved') {
+      const win = d.winnerTeamId === me.id ? 'I vandt! 🏆' : d.winnerTeamId ? 'I tabte.' : 'Uafgjort.';
+      box.appendChild(el('p', { style: 'margin-top:6px', html: `<b>${win}</b> (${d.winsA}-${d.winsB})` }));
+    }
+    return box;
+  }
+
+  // ---------- TRADE ----------
+  function tradeView() {
+    const me = S.me;
+    const c = el('div.col');
+    c.appendChild(head('Byttehandel', 'Byt jeres øvelse med en anden stald.'));
+    // indgående/udgående
+    (S.trades || []).filter((t) => t.status === 'pending').forEach((t) => c.appendChild(tradeRow(t)));
+    if (!me.ownedAuctionExerciseId) { c.appendChild(el('div.card', {}, [el('p.muted', { text: 'I skal eje en øvelse for at kunne tilbyde en byttehandel.' })])); return c; }
+    const others = S.teams.filter((t) => t.id !== me.id && t.ownedAuctionExerciseId);
+    const card = el('div.card');
+    card.appendChild(el('h3', { text: 'Nyt tilbud' }));
+    const sel = el('select', { style: 'margin-top:8px' });
+    sel.appendChild(el('option', { value: '', text: 'Vælg stald at bytte med…' }));
+    others.forEach((t) => { const ex = S.auction.exercises.find((e) => e.id === t.ownedAuctionExerciseId); sel.appendChild(el('option', { value: t.id, text: `${t.stableName} — har ${ex ? ex.name : '?'}` })); });
+    const extra = el('input', { type: 'number', min: '0', placeholder: 'Ekstra betaling fra jer (SD)', style: 'margin-top:8px' });
+    const myEx = S.auction.exercises.find((e) => e.id === me.ownedAuctionExerciseId);
+    card.appendChild(el('p.muted', { style: 'margin-top:8px', text: 'I giver: ' + (myEx ? myEx.name : '?') }));
+    card.appendChild(sel); card.appendChild(extra);
+    const b = el('button.btn.gold.block', { text: 'Send tilbud', style: 'margin-top:8px' });
+    b.addEventListener('click', () => { const to = S.teams.find((t) => t.id === sel.value); if (!to) return toast('Vælg en stald.', 'err'); TG.emit('team:trade', { toTeamId: to.id, offeredExerciseId: me.ownedAuctionExerciseId, requestedExerciseId: to.ownedAuctionExerciseId, extraPayment: Number(extra.value || 0) }).then((r) => { check(r); if (r.ok) toast('Tilbud sendt', 'ok'); }); });
+    card.appendChild(b); c.appendChild(card);
+    return c;
+  }
+  function tradeRow(t) {
+    const me = S.me;
+    const incoming = t.toTeamId === me.id;
+    const card = el('div.card', { style: 'border:2px solid var(--gold)' });
+    card.appendChild(el('h3', { text: incoming ? 'Tilbud fra ' + t.fromStable : 'Jeres tilbud til ' + t.toStable }));
+    card.appendChild(el('p', { style: 'margin:6px 0', html: incoming ? `I får: <b>${t.offeredName}</b>${t.extraPayment ? ' + ' + sd(t.extraPayment) : ''}<br>I giver: <b>${t.requestedName}</b>` : `I giver: <b>${t.offeredName}</b>${t.extraPayment ? ' + ' + sd(t.extraPayment) : ''}<br>I får: <b>${t.requestedName}</b>` }));
+    const row = el('div.row');
+    if (incoming) {
+      const acc = el('button.btn.turf', { text: 'Accepter' }); acc.addEventListener('click', () => TG.emit('team:tradeRespond', { tradeId: t.id, accept: true }).then((r) => { check(r); if (r.ok) toast('Handel gennemført', 'ok'); }));
+      const rej = el('button.btn.ghost', { text: 'Afvis' }); rej.addEventListener('click', () => TG.emit('team:tradeRespond', { tradeId: t.id, accept: false }));
+      row.appendChild(acc); row.appendChild(rej);
+    } else { const cancel = el('button.btn.ghost', { text: 'Annullér' }); cancel.addEventListener('click', () => TG.emit('team:tradeCancel', { tradeId: t.id })); row.appendChild(cancel); }
+    card.appendChild(row);
+    return card;
+  }
+
+  // ---------- AUCTION HOUSE ----------
+  function houseView() {
+    const me = S.me;
+    const c = el('div.col');
+    c.appendChild(head('Auktionshus', 'Byt jeres øvelse til en ledig — mod et gebyr.'));
+    if (!me.ownedAuctionExerciseId) { c.appendChild(el('div.card', {}, [el('p.muted', { text: 'I ejer ingen øvelse at bytte.' })])); return c; }
+    const fee = Math.round(me.ownedExercisePurchasePrice * (S.config.auctionHouseExchangeRate || 0.5));
+    c.appendChild(el('div.card', {}, [el('p', { html: `Byttegebyr: <b>${sd(fee)}</b> (50% af jeres købspris).` })]));
+    const free = S.auction.exercises.filter((e) => !e.currentOwnerTeamId);
+    if (!free.length) c.appendChild(el('div.card', {}, [el('p.muted', { text: 'Ingen ledige øvelser i auktionshuset lige nu.' })]));
+    free.forEach((ex) => {
+      const card = el('div.card');
+      card.appendChild(el('div.row.between', {}, [el('div', {}, [el('span.cat.' + ex.category, { text: catName(ex.category) }), el('h3', { text: ex.name })]), el('span.chip.gold', { text: 'Ledig' })]));
+      card.appendChild(el('p.muted', { text: ex.short, style: 'margin:6px 0' }));
+      const b = el('button.btn.block', { text: `Byt hertil (${money(fee)} SD)` });
+      b.addEventListener('click', () => TG.emit('team:exchange', { targetExerciseId: ex.id }).then((r) => { check(r); if (r.ok) toast('Byttet!', 'ok'); }));
+      card.appendChild(b); c.appendChild(card);
+    });
+    return c;
+  }
+
+  // ---------- INVEST ----------
+  function investView() {
+    const c = el('div.col');
+    c.appendChild(head('Investér', 'Hesten løfter toppen, jockeyen bunden. Stald = sikker værdi.'));
+    const groups = [['horse', 'Hest', 'burgundy'], ['jockey', 'Jockey', 'turf'], ['stable', 'Stald', 'gold']];
+    groups.forEach(([type, label]) => {
+      const card = el('div.card');
+      card.appendChild(el('h3', { text: label }));
+      ((S.config.investmentOptions || {})[type] || []).forEach((p) => {
+        const row = el('div.row.between', { style: 'padding:8px 0;border-bottom:1px dashed var(--line)' });
+        row.appendChild(el('div', {}, [el('b', { text: p.label }), el('div.muted', { style: 'font-size:13px', text: `+${money(p.valueIncrease)} værdi${p.performancePoints ? ' · +' + p.performancePoints + ' point' : ''}` })]));
+        const b = el('button.btn.sm', { text: money(p.cost) + ' SD' });
+        b.addEventListener('click', () => TG.emit('team:invest', { assetType: type, productId: p.id }).then((r) => { check(r); if (r.ok) toast('Investeret', 'ok'); }));
+        row.appendChild(b); card.appendChild(row);
+      });
+      c.appendChild(card);
+    });
+    return c;
+  }
+
+  // ---------- BANK ----------
+  function bankView() {
+    const me = S.me;
+    const c = el('div.col');
+    c.appendChild(head('Bank & staldværdi', 'Jeres samlede værdi.'));
+    const g = el('div.card'); const grid = el('div.grid', { style: 'grid-template-columns:1fr 1fr' });
+    [['Kontanter', me.cash], ['Hest', me.horseValue], ['Jockey', me.jockeyValue], ['Stald', me.stableValue]].forEach(([k, v]) => grid.appendChild(el('div.stat', {}, [el('div.k', { text: k }), el('div.v', { text: sd(v) })])));
+    g.appendChild(grid);
+    g.appendChild(el('div.finish-stripe', { style: 'margin:14px 0' }));
+    g.appendChild(el('div.stat.big', {}, [el('div.k', { text: 'Total staldværdi' }), el('div.v', { text: sd(me.totalValue) })]));
+    c.appendChild(g);
+    // leaderboard
+    const lb = el('div.card'); lb.appendChild(el('h3', { text: 'Stilling' }));
+    (S.ranking || []).forEach((r) => lb.appendChild(el('div.row.between', { style: 'padding:6px 0;border-bottom:1px dashed var(--line)' }, [el('span', { html: `<b>${r.place}.</b> ${r.stableName}${r.teamId === me.id ? ' (jer)' : ''}` }), el('span.num', { text: sd(r.totalValue) })])));
+    c.appendChild(lb);
+    return c;
+  }
+
+  // ---------- RACE ----------
+  function raceView() {
+    const me = S.me; const race = S.race;
+    const c = el('div.col');
+    c.appendChild(head(S.slide.title, race ? (race.rollingOpen ? 'Rolling er åben — slå jeres terning!' : 'Vent på at værten åbner for rolling…') : 'Klargør…'));
+    if (!race) return c;
+    const used = (me.race.rolls || []).length; const allowed = me.race.allowed || race.rollsPerTeam;
+    const card = el('div.card.center');
+    card.appendChild(el('div.stat.big', {}, [el('div.k', { text: 'Position' }), el('div.v', { text: me.race.position + ' / ' + race.trackLength })]));
+    card.appendChild(el('div.dice', { text: me.race.lastRoll ? '🎲 ' + me.race.lastRoll : '—', style: 'margin:10px 0' }));
+    card.appendChild(el('p.muted', { text: `Slag brugt: ${used}/${allowed} · terning ${me.dice.min}–${me.dice.max}` }));
+    const canRoll = race.rollingOpen && used < allowed;
+    const b = el('button.btn.gold.xl', { text: canRoll ? 'SLÅ TERNING' : (used >= allowed ? 'Alle slag brugt' : 'Vent…'), disabled: canRoll ? null : 'true', style: 'margin-top:14px' });
+    b.addEventListener('click', () => TG.emit('team:roll').then((r) => check(r)));
+    card.appendChild(b);
+    c.appendChild(card);
+    if (race.results && race.results.length) { const res = el('div.card'); res.appendChild(el('h3', { text: 'Resultat' })); race.results.forEach((r) => res.appendChild(el('div.row.between', { style: 'padding:5px 0' }, [el('span', { text: `${r.place}. ${r.stableName}` }), el('span.num', { text: '+' + money(r.prize) })]))); c.appendChild(res); }
+    return c;
+  }
+
+  // ---------- FINAL ----------
+  function finalResultView() {
+    const c = el('div.col');
+    const winner = (S.ranking || [])[0];
+    c.appendChild(centerMsg(winner ? '🏆 ' + winner.stableName : 'Tak for i dag!', winner ? 'Vinder med ' + sd(winner.totalValue) : ''));
+    const lb = el('div.card'); lb.appendChild(el('h3', { text: 'Endelig stilling' }));
+    (S.ranking || []).forEach((r) => lb.appendChild(el('div.row.between', { style: 'padding:6px 0;border-bottom:1px dashed var(--line)' }, [el('span', { html: `<b>${r.place}.</b> ${r.stableName}` }), el('span.num', { text: sd(r.totalValue) })])));
+    c.appendChild(lb);
+    return c;
+  }
+
+  // ---------- helpers ----------
+  function head(title, sub) { const h = el('div', { style: 'margin:4px 0 6px' }); h.appendChild(el('h1', { text: title, style: 'font-size:30px' })); if (sub) h.appendChild(el('p.muted', { text: sub })); return h; }
+  function backBtn(fn) { const b = el('button.btn.sm.ghost', { text: '← Tilbage' }); b.addEventListener('click', fn); return b; }
+  function catName(c) { return c === 'money' ? 'Penge' : c === 'jockey' ? 'Jockey' : 'Hest'; }
+  function ownerName(id) { const t = S.teams.find((x) => x.id === id); return t ? t.stableName : '—'; }
+  function cooldownLeft(key) { const exp = (S.me.cooldowns || {})[key]; if (!exp) return null; const s = Math.round((exp - Date.now()) / 1000); return s > 0 ? mmss(s) : null; }
+  function mmss(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+  let lastIncoming = 0;
+  function incomingTradeToast() {
+    const me = S.me; const pending = (S.trades || []).filter((t) => t.status === 'pending' && t.toTeamId === me.id);
+    if (pending.length && pending[0].createdAt > lastIncoming) { lastIncoming = pending[0].createdAt; toast('Nyt byttetilbud fra ' + pending[0].fromStable + '!', 'ok'); }
+  }
+
+  // opdater cooldown/tid-labels uden fuld re-render
+  setInterval(() => {
+    document.querySelectorAll('[data-cooldown]').forEach((n) => { const k = n.getAttribute('data-cooldown'); const left = S && S.me ? cooldownLeft(k) : null; if (!left) { render(); } });
+  }, 1000);
+})();

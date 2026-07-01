@@ -1,0 +1,63 @@
+/* tokens.css — Katjas Grafisk Linje omsat til design-tokens.
+   Palette 60/30/10: cream (baggrund) · navy (anker) · accenter (burgundy/rød/guld/turf). */
+:root {
+  --cream: #FAF6EA;
+  --cream-2: #F1E9D6;
+  --cream-3: #E7DCC2;
+  --navy: #1F3E63;
+  --navy-2: #17314f;
+  --navy-ink: #0f2440;
+  --burgundy: #6E1F2E;
+  --red: #B83232;
+  --gold: #C9A227;
+  --gold-soft: #E3C766;
+  --turf: #2D4A3D;
+
+  --text: #1b2a3d;
+  --text-dim: #5b6b7d;
+  --text-faint: #8a97a6;
+  --on-navy: #FAF6EA;
+
+  --line: rgba(31, 62, 99, 0.16);
+  --line-strong: rgba(31, 62, 99, 0.30);
+
+  --radius: 16px;
+  --radius-lg: 24px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 6px rgba(15, 36, 64, 0.08), 0 12px 30px rgba(15, 36, 64, 0.10);
+  --shadow-lg: 0 10px 40px rgba(15, 36, 64, 0.18);
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-num: Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+}
+
+h1, h2, h3, .display { font-family: var(--font-display); color: var(--navy); line-height: 1.08; font-weight: 800; }
+.num { font-family: var(--font-num); font-weight: 700; font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); letter-spacing: 0.5px; }
+
+.eyebrow {
+  font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--burgundy); font-weight: 700;
+}
+
+/* finish-line stripe divider */
+.finish-stripe {
+  height: 10px; border-radius: 3px;
+  background-image: repeating-linear-gradient(90deg, var(--navy) 0 12px, var(--cream) 12px 24px);
+  border: 1px solid var(--line);
+}
+
+a { color: var(--navy); }
+::selection { background: var(--gold-soft); }

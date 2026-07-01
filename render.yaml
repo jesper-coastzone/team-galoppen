@@ -1,0 +1,15 @@
+# Render.com Blueprint — deploy hele appen med ét klik.
+# Se README ("Deploy til Render") for trin-for-trin.
+services:
+  - type: web
+    name: team-galoppen
+    runtime: node
+    plan: free            # skift til 'starter' for et rigtigt event (ingen dvale)
+    buildCommand: npm install
+    startCommand: node server.js
+    autoDeploy: true
+    envVars:
+      - key: HOST_PASSWORD
+        sync: false        # sæt dit eget kodeord i Render-dashboardet
+      - key: NODE_VERSION
+        value: "20"

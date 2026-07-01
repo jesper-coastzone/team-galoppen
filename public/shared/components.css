@@ -1,0 +1,95 @@
+/* components.css — genbrugelige UI-komponenter i Katjas linje. */
+
+/* Kort */
+.card {
+  background: #fff; border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 20px;
+}
+.card.flush { padding: 0; overflow: hidden; }
+.card-head { padding: 14px 18px; background: var(--navy); color: var(--on-navy); font-weight: 700; }
+.card-head.burgundy { background: var(--burgundy); }
+.card-head.gold { background: var(--gold); color: var(--navy-ink); }
+
+/* Knapper */
+.btn {
+  font-family: var(--font-body); font-weight: 700; font-size: 16px;
+  border: 2px solid var(--navy); background: var(--navy); color: var(--on-navy);
+  border-radius: 12px; padding: 12px 20px; cursor: pointer;
+  transition: transform .06s ease, filter .15s ease; text-align: center;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.gold { background: var(--gold); border-color: var(--gold); color: var(--navy-ink); }
+.btn.burgundy { background: var(--burgundy); border-color: var(--burgundy); }
+.btn.turf { background: var(--turf); border-color: var(--turf); }
+.btn.ghost { background: transparent; color: var(--navy); }
+.btn.red { background: var(--red); border-color: var(--red); }
+.btn.lg { font-size: 22px; padding: 18px 28px; border-radius: 16px; }
+.btn.xl { font-size: 28px; padding: 26px; border-radius: 20px; width: 100%; }
+.btn.sm { font-size: 13px; padding: 7px 12px; border-radius: 9px; }
+.btn.block { width: 100%; }
+
+/* Badge (staldnummer i staldfarve) */
+.badge {
+  width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
+  display: grid; place-items: center; color: #fff; font-weight: 800;
+  font-family: var(--font-num); border: 2px solid rgba(0,0,0,.15);
+}
+.badge.lg { width: 60px; height: 60px; font-size: 26px; }
+
+/* Pille/chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: var(--cream-2); color: var(--text-dim); border: 1px solid var(--line);
+}
+.chip.gold { background: #fbf1cf; color: #7a5f10; border-color: #e7d38a; }
+.chip.turf { background: #e2ede7; color: var(--turf); border-color: #bcd4c8; }
+.chip.red { background: #f7dede; color: var(--red); border-color: #eabcbc; }
+
+/* Store tal */
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat .k { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-faint); font-weight: 700; }
+.stat .v { font-family: var(--font-num); font-weight: 700; font-size: 30px; color: var(--navy); line-height: 1; }
+.stat.big .v { font-size: 52px; }
+.stat.huge .v { font-size: 88px; }
+
+/* Race-card (vintage program) */
+.racecard { font-family: var(--font-mono); background: var(--cream); border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; }
+.racecard .rc-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px dashed var(--line); }
+.racecard .rc-row:last-child { border-bottom: 0; }
+.racecard .rc-no { font-weight: 700; color: var(--burgundy); width: 22px; }
+.racecard .rc-name { flex: 1; }
+.racecard .rc-time { color: var(--text-dim); }
+
+/* Inputs */
+input[type=text], input[type=number], select, textarea {
+  font-family: var(--font-body); font-size: 17px; color: var(--text);
+  background: #fff; border: 2px solid var(--line-strong); border-radius: 12px;
+  padding: 12px 14px; width: 100%;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--navy); }
+label.field { display: block; margin-bottom: 14px; }
+label.field .lbl { display: block; font-weight: 700; margin-bottom: 6px; color: var(--navy); }
+
+/* Layout hjælpere */
+.row { display: flex; gap: 12px; align-items: center; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+.grid { display: grid; gap: 14px; }
+.between { justify-content: space-between; }
+.wrap { flex-wrap: wrap; }
+.muted { color: var(--text-dim); }
+.center { text-align: center; }
+.pad { padding: 20px; }
+
+/* Toast */
+#toasts { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast { background: var(--navy); color: var(--on-navy); padding: 12px 18px; border-radius: 12px; box-shadow: var(--shadow-lg); font-weight: 600; animation: pop .2s ease; max-width: 90vw; }
+.toast.err { background: var(--red); }
+.toast.ok { background: var(--turf); }
+@keyframes pop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; } }
+
+/* Kompas-motiv (SVG bruges inline) & horse silhouette handled per-view */
+.derby-corner { position: fixed; top: -10px; right: -6px; width: 120px; opacity: .5; pointer-events: none; }

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Galoppen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/components.css">
+<style>
+  .wrapper { max-width: 720px; margin: 0 auto; padding: 8vh 20px; }
+  .hero { text-align: center; margin-bottom: 40px; }
+  .hero .eyebrow { justify-content: center; }
+  .hero h1 { font-size: clamp(40px, 8vw, 72px); margin: 10px 0; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .tile { text-decoration: none; }
+  .tile .card { text-align: center; transition: transform .1s; }
+  .tile .card:hover { transform: translateY(-4px); }
+  .tile .ic { width: 54px; height: 54px; margin: 0 auto 10px; }
+  @media (max-width: 620px){ .tiles{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="hero">
+      <div class="eyebrow">CoastZone · Live event</div>
+      <h1>The Great Team Derby</h1>
+      <p class="muted">Vælg din rolle for at komme i gang.</p>
+    </div>
+    <div class="tiles">
+      <a class="tile" href="/host"><div class="card"><div class="ic" id="ic1"></div><h3>Host</h3><p class="muted">Game master-konsol</p></div></a>
+      <a class="tile" href="/screen"><div class="card"><div class="ic" id="ic2"></div><h3>Storskærm</h3><p class="muted">Præsentation / projektor</p></div></a>
+      <a class="tile" href="/team"><div class="card"><div class="ic" id="ic3"></div><h3>Tablet</h3><p class="muted">Stald-tablet</p></div></a>
+    </div>
+  </div>
+  <script>
+    document.getElementById('ic1').innerHTML = '<svg viewBox="0 0 64 64" width="100%"><circle cx="32" cy="32" r="30" fill="#1F3E63"/><path d="M32 12 L38 30 L32 52 L26 30 Z" fill="#FAF6EA"/></svg>';
+    document.getElementById('ic2').innerHTML = '<svg viewBox="0 0 64 64" width="100%"><rect x="6" y="10" width="52" height="34" rx="4" fill="#2D4A3D"/><rect x="26" y="46" width="12" height="8" fill="#6E1F2E"/></svg>';
+    document.getElementById('ic3').innerHTML = '<svg viewBox="0 0 64 64" width="100%"><rect x="12" y="6" width="40" height="52" rx="6" fill="#C9A227"/><circle cx="32" cy="50" r="3" fill="#1F3E63"/></svg>';
+  </script>
+</body>
+</html>

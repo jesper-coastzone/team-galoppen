@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Galoppen — Storskærm</title>
+<meta name="theme-color" content="#1F3E63">
+<link rel="icon" href="/icon.png?size=64">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/components.css">
+<style>
+  body { background: var(--cream); overflow: hidden; }
+  .stage { position: fixed; inset: 0; display: flex; flex-direction: column; padding: 4vh 5vw; }
+  .brandbar { display: flex; align-items: center; gap: 16px; }
+  .brandbar .eyebrow { font-size: 1.1vw; }
+  .brandbar .code { margin-left: auto; text-align: right; }
+  .brandbar .code .lbl { font-size: .9vw; letter-spacing: 2px; text-transform: uppercase; color: var(--text-faint); }
+  .brandbar .code .val { font-family: var(--font-num); font-weight: 800; font-size: 2.4vw; color: var(--burgundy); letter-spacing: 4px; }
+  .content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .content h1 { font-size: 6vw; margin: .2em 0; }
+  .content h2 { font-size: 3.4vw; }
+  .lead { font-size: 1.8vw; color: var(--text-dim); max-width: 60ch; }
+  .corner-motif { position: fixed; top: -2vw; right: -1vw; width: 16vw; opacity: .5; }
+  .flow { display: flex; gap: 1vw; flex-wrap: wrap; margin-top: 2vh; }
+  .flow .step { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.2vw 1.6vw; font-weight: 700; font-size: 1.4vw; box-shadow: var(--shadow); }
+  .flow .arrow { align-self: center; color: var(--gold); font-size: 1.6vw; }
+  .teamgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2vw; }
+  .teamcard { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 1.2vw; box-shadow: var(--shadow); display: flex; align-items: center; gap: 1vw; }
+  .teamcard .badge { width: 3.4vw; height: 3.4vw; font-size: 1.6vw; }
+  .teamcard .tn { font-family: var(--font-display); font-weight: 800; font-size: 1.6vw; }
+  .teamcard .sub { font-size: 1vw; color: var(--text-dim); }
+  .big-num { font-family: var(--font-num); font-weight: 800; font-size: 9vw; color: var(--navy); line-height: 1; }
+  .qr { background: #fff; padding: 1vw; border-radius: 14px; box-shadow: var(--shadow); }
+  .qr img { width: 12vw; display: block; }
+  .track { flex: 1; display: flex; flex-direction: column; gap: .6vh; justify-content: center; }
+  .lane { position: relative; height: 6.2vh; background: linear-gradient(90deg, #26533c, #2E7D4F); border-radius: 10px; border: 2px solid #17402c; overflow: hidden; }
+  .lane .finish { position: absolute; right: 3%; top: 0; bottom: 0; width: 6px; background-image: repeating-linear-gradient(180deg,#fff 0 8px,#111 8px 16px); }
+  .lane .horse { position: absolute; top: 50%; transform: translateY(-50%); left: 1%; width: 4vh; height: 4vh; transition: left .5s cubic-bezier(.2,.7,.3,1); }
+  .lane .tag { position: absolute; left: .6vw; top: .4vh; color: #fff; font-weight: 800; font-size: 1vw; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+  .reveal-row { display: grid; grid-template-columns: auto 1fr auto; gap: 1vw; align-items: center; padding: 1vh 0; border-bottom: 1px dashed var(--line); font-size: 1.8vw; }
+  .winner-hero { text-align: center; }
+  .winner-hero .crown { font-size: 6vw; }
+  .lb-row { display: grid; grid-template-columns: auto 1fr auto; gap: 1.4vw; align-items: center; padding: 1.1vh 0; border-bottom: 1px solid var(--line); font-size: 2vw; }
+  .lb-row .num { font-size: 2.4vw; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/client.js"></script>
+  <script src="/screen/screen.js"></script>
+</body>
+</html>
