@@ -491,7 +491,7 @@
     const used = (me.race.rolls || []).length; const allowed = me.race.allowed || race.rollsPerTeam;
     const card = el('div.card.center');
     card.appendChild(el('div.stat.big', {}, [el('div.k', { text: 'Position' }), el('div.v', { text: me.race.position + ' / ' + race.trackLength })]));
-    card.appendChild(el('div.dice', { text: me.race.lastRoll ? '🎲 ' + me.race.lastRoll : '—', style: 'margin:10px 0' }));
+    const dice = el('div.dice', { style: 'margin:10px 0;display:flex;align-items:center;justify-content:center;gap:10px' }); if (me.race.lastRoll) { dice.appendChild(TG.assetImg('terning', { style: 'width:52px;height:52px' })); dice.appendChild(el('span', { text: String(me.race.lastRoll) })); } else { dice.textContent = '—'; } card.appendChild(dice);
     card.appendChild(el('p.muted', { text: `Slag brugt: ${used}/${allowed} · terning ${me.dice.min}–${me.dice.max}` }));
     const canRoll = race.rollingOpen && used < allowed;
     const b = el('button.btn.gold.xl', { text: canRoll ? 'SLÅ TERNING' : (used >= allowed ? 'Alle slag brugt' : 'Vent…'), disabled: canRoll ? null : 'true', style: 'margin-top:14px' });
