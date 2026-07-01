@@ -77,11 +77,14 @@
     return c;
   }
   function derbyIntro() {
-    const c = el('div');
+    const row = el('div', { style: 'display:flex;align-items:center;gap:3vw' });
+    const c = el('div', { style: 'flex:1' });
     c.appendChild(el('div.eyebrow', { text: 'Dagens dyst' }));
     c.appendChild(el('h1', { text: 'The Great Team Derby' }));
     c.appendChild(el('p.lead', { text: 'Samarbejde, strategi, investeringer og performance. Byg jeres stald — og gør den mest værdifuld.' }));
-    return c;
+    row.appendChild(c);
+    row.appendChild(TG.assetImg('hest-og-jockey', { style: 'width:34vw;max-height:58vh' }));
+    return row;
   }
   function program() {
     const c = el('div');
@@ -114,12 +117,12 @@
     if (window.__psTourTimer) { clearInterval(window.__psTourTimer); window.__psTourTimer = null; }
     const PS_CSS = '.ps-wrap{display:flex;gap:2vw;align-items:stretch}.ps-board{flex:1.3;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:1vw;background:linear-gradient(160deg,#2b5d40,#1c4a30);border-radius:20px;padding:1.4vw;border:3px solid #163d29;box-shadow:var(--shadow-lg)}.ps-tile{cursor:pointer;background:var(--cream);border-radius:14px;padding:1.1vw 1.2vw;display:flex;flex-direction:column;gap:.3vw;justify-content:center;opacity:.5;transition:transform .45s cubic-bezier(.2,.9,.3,1),box-shadow .45s,opacity .45s}.ps-tile .n{font-size:.85vw;letter-spacing:2px;text-transform:uppercase;color:var(--burgundy);font-weight:700}.ps-tile .t{font-family:var(--font-display);font-weight:800;font-size:1.5vw;color:var(--navy);line-height:1.05}.ps-tile.active{opacity:1;transform:scale(1.05);box-shadow:0 0 0 4px var(--gold),0 14px 34px rgba(0,0,0,.32)}.ps-panel{flex:1;background:var(--navy);color:var(--on-navy);border-radius:20px;padding:2vw;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow-lg)}.ps-panel .pe{font-size:1vw;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:700;margin-bottom:1vh}.ps-panel .pt{font-family:var(--font-display);font-size:2.8vw;line-height:1.05;margin-bottom:1.4vh}.ps-panel .pd{font-size:1.5vw;line-height:1.5;opacity:.93}.ps-dots{display:flex;gap:.6vw;margin-top:2.4vh}.ps-dots i{width:.9vw;height:.9vw;border-radius:50%;background:rgba(255,255,255,.28);transition:background .3s}.ps-dots i.on{background:var(--gold)}';
     const stations = [
-      { n: 'Din base', t: 'Stalden', color: '#1F3E63', icon: TG.motif.horse('#1F3E63'), eyebrow: 'Station 1 · Stalden', desc: 'Her bor jeres hest og jockey. Giv dem navne, og gør stalden klar til sæsonen.' },
-      { n: 'Hver runde', t: 'Auktionshuset', color: '#6E1F2E', icon: hammerSvg(), eyebrow: 'Station 2 · Auktion', desc: 'I byder på 7 special-øvelser. I kan kun eje én ad gangen — men den kan sælges videre med gevinst.' },
-      { n: 'Tjen penge', t: 'Opgaverne', color: '#C9A227', icon: puzzleSvg(), eyebrow: 'Station 3 · Opgaver', desc: 'Tip en 13-er, Tidslinje og Dyst giver Staldollars. Byg puslespillet og få jeres Derby-licens.' },
-      { n: 'Bliv stærkere', t: 'Investering', color: '#2D4A3D', icon: chartSvg(), eyebrow: 'Station 4 · Investering', desc: 'Køb op i hest (fart), jockey (stabilitet) eller stald (sikker værdi). Hesten løfter terningens top, jockeyen dens bund.' },
-      { n: 'Payoff', t: 'Væddeløbsbanen', color: '#B83232', icon: flagSvg(), eyebrow: 'Station 5 · Løb', desc: 'Efter hver runde er der løb. I slår terninger — den bedste hest på banen vinder præmiepenge.' },
-      { n: 'Sådan vinder I', t: 'Staldværdien', color: '#C9A227', icon: TG.motif.compass('#C9A227'), eyebrow: 'Station 6 · Vinderen', desc: 'Den mest værdifulde stald vinder til sidst: kontanter + hest + jockey + stald. Ikke nødvendigvis løbsvinderen!' },
+      { n: 'Din base', t: 'Stalden', color: '#1F3E63', icon: TG.assetTag('hest-silhuet'), eyebrow: 'Station 1 · Stalden', desc: 'Her bor jeres hest og jockey. Giv dem navne, og gør stalden klar til sæsonen.' },
+      { n: 'Hver runde', t: 'Auktionshuset', color: '#6E1F2E', icon: TG.assetTag('hammer-auktion'), eyebrow: 'Station 2 · Auktion', desc: 'I byder på 7 special-øvelser. I kan kun eje én ad gangen — men den kan sælges videre med gevinst.' },
+      { n: 'Tjen penge', t: 'Opgaverne', color: '#C9A227', icon: TG.assetTag('puslespil-opgaver'), eyebrow: 'Station 3 · Opgaver', desc: 'Tip en 13-er, Tidslinje og Dyst giver Staldollars. Byg puslespillet og få jeres Derby-licens.' },
+      { n: 'Bliv stærkere', t: 'Investering', color: '#2D4A3D', icon: TG.assetTag('diagram-investering'), eyebrow: 'Station 4 · Investering', desc: 'Køb op i hest (fart), jockey (stabilitet) eller stald (sikker værdi). Hesten løfter terningens top, jockeyen dens bund.' },
+      { n: 'Payoff', t: 'Væddeløbsbanen', color: '#B83232', icon: TG.assetTag('maalflag'), eyebrow: 'Station 5 · Løb', desc: 'Efter hver runde er der løb. I slår terninger — den bedste hest på banen vinder præmiepenge.' },
+      { n: 'Sådan vinder I', t: 'Staldværdien', color: '#C9A227', icon: TG.assetTag('pokal'), eyebrow: 'Station 6 · Vinderen', desc: 'Den mest værdifulde stald vinder til sidst: kontanter + hest + jockey + stald. Ikke nødvendigvis løbsvinderen!' },
     ];
     const wrap = el('div');
     wrap.appendChild(el('style', { html: PS_CSS }));
@@ -251,7 +254,7 @@
       const lane = el('div.lane');
       lane.appendChild(el('div.tag', { text: t.stableName }));
       lane.appendChild(el('div.finish'));
-      const horse = el('div.horse', { style: `left:${pct}%`, html: TG.motif.horse(t.color.hex) });
+      const horse = el('div.horse', { style: `left:${pct}%` }); horse.appendChild(TG.tintedAsset('hest-markoer-silhuet', t.color.hex, { style: 'width:100%;height:100%' }));
       lane.appendChild(horse);
       track.appendChild(lane);
     });
@@ -301,7 +304,7 @@
     const winner = (S.ranking || [])[0];
     const c = el('div.winner-hero');
     if (!winner) return el('h1', { text: 'Afsløring' });
-    c.appendChild(el('div.crown', { text: '👑' }));
+    const crown = el('div.crown'); crown.appendChild(TG.assetImg('pokal', { style: 'width:6vw;height:6vw' })); c.appendChild(crown);
     c.appendChild(el('div.eyebrow', { text: 'Vinderen af The Great Team Derby' }));
     c.appendChild(el('h1', { text: winner.stableName, style: 'font-size:6vw' }));
     c.appendChild(el('div.big-num', { text: sd(winner.totalValue), style: 'margin:1vh 0' }));
