@@ -105,17 +105,57 @@
 
   // ---------- PRE-SEASON ----------
   function preseasonView() {
+    if (ui.psDetail) return preseasonDetail();
     const c = el('div.col');
-    c.appendChild(head('Pre-season', 'Læs, forstå strategien og planlæg jeres første træk. Ingen belønninger endnu.'));
-    const items = [
-      ['Sådan vinder I', 'Den mest værdifulde stald vinder — ikke nødvendigvis løbsvinderen. Værdi = kontanter + hest + jockey + stald.'],
-      ['Auktion', 'Hver runde starter med en auktion. I byder på 7 special-øvelser. I kan kun eje én ad gangen — men den kan sælges videre.'],
-      ['Opgaver', 'Løs Tip en 13\'er, Tidslinje og Dyst for kontanter. Byg puslespillet for Derby-licens. Pynt hest og staldskilt til showcase.'],
-      ['Investering', 'Køb op i hest (top), jockey (bund) eller stald (sikker værdi). Hesten løfter terningens max, jockeyen dens min.'],
-      ['Løb', 'Slå terninger. Hesten løfter topniveauet, jockeyen bundniveauet. Præmier giver kontanter.'],
-    ];
-    items.forEach(([t, d]) => { const card = el('div.card'); card.appendChild(el('h3', { text: t })); card.appendChild(el('p.muted', { text: d, style: 'margin-top:6px' })); c.appendChild(card); });
+    c.appendChild(head('Pre-season', 'Tryk ind på en funktion for at læse om den. Ingen belønninger endnu — brug tiden på at planlægge.'));
+    const groups = psInfo();
+    Object.keys(groups).forEach((g) => {
+      c.appendChild(el('div.eyebrow', { text: g, style: 'margin-top:8px' }));
+      const grid = el('div.grid', { style: 'grid-template-columns:1fr 1fr' });
+      groups[g].forEach((it) => {
+        const card = el('div.ex-tile');
+        if (it.cat) card.appendChild(el('span.cat.' + it.cat, { text: catName(it.cat) }));
+        card.appendChild(el('h3', { text: it.name, style: 'margin:2px 0' }));
+        card.appendChild(el('p.muted', { text: (it.desc || '').slice(0, 58) + '…', style: 'font-size:13px' }));
+        card.addEventListener('click', () => { ui.psDetail = it.id; render(); });
+        grid.appendChild(card);
+      });
+      c.appendChild(grid);
+    });
     return c;
+  }
+
+  function preseasonDetail() {
+    const all = [].concat.apply([], Object.keys(psInfo()).map((k) => psInfo()[k]));
+    const it = all.find((x) => x.id === ui.psDetail) || all[0];
+    const c = el('div.col');
+    c.appendChild(el('button.btn.sm.ghost', { text: '← Tilbage', onclick: () => { ui.psDetail = null; render(); } }));
+    const card = el('div.card');
+    if (it.cat) card.appendChild(el('span.cat.' + it.cat, { text: catName(it.cat) }));
+    card.appendChild(el('h1', { text: it.name, style: 'font-size:30px;margin:4px 0' }));
+    card.appendChild(el('div.finish-stripe', { style: 'margin:10px 0' }));
+    card.appendChild(el('p', { text: it.desc }));
+    if (it.gives) card.appendChild(el('p.muted', { style: 'margin-top:8px', text: 'Giver: ' + it.gives }));
+    if (it.thresholds) card.appendChild(thresholdInfo(it));
+    c.appendChild(card);
+    return c;
+  }
+
+  function psInfo() {
+    const g = { 'Overblik': [], 'Auktionsøvelser': [], 'Pengeopgaver': [], 'Altid tilgængelige': [], 'Investering': [] };
+    g['Overblik'].push({ id: 'win', name: 'Sådan vinder I', desc: 'Den mest værdifulde stald vinder til sidst: kontanter + hest + jockey + stald. Løbsvinderen er ikke nødvendigvis den samlede vinder.' });
+    g['Overblik'].push({ id: 'flow', name: 'Spillets gang', desc: 'Hver runde: auktion → opgaver og handel → løb → stilling. Til sidst det store finaleløb og vinderafsløring.' });
+    (S.auction.exercises || []).forEach((ex) => g['Auktionsøvelser'].push({ id: ex.id, name: ex.name, cat: ex.category, desc: ex.description, gives: ex.gives, thresholds: ex.thresholds, lowerIsBetter: ex.lowerIsBetter }));
+    g['Pengeopgaver'].push({ id: 'tip13', name: 'Tip en 13\'er', desc: '13 spørgsmål. I får kontanter pr. rigtige svar. Cooldown mellem forsøg.' });
+    g['Pengeopgaver'].push({ id: 'tidslinje', name: 'Tidslinje', desc: 'Sæt 5 begivenheder i korrekt kronologisk rækkefølge for en kontant belønning.' });
+    g['Pengeopgaver'].push({ id: 'dyst', name: 'Dyst', desc: 'Udfordr en anden stald til en estimerings-duel — bedst af 3. Vinderen får kontanter.' });
+    g['Altid tilgængelige'].push({ id: 'puzzle', name: 'Puslespil', desc: 'Et langt team-puslespil. Fuldfør det før finalen for at få jeres Derby-licens.' });
+    g['Altid tilgængelige'].push({ id: 'horseStyling', name: 'Pynt jeres hest', desc: 'Dekorér jeres hobbyhest. Bedømmes i den kreative showcase — giver bonus til staldværdien.' });
+    g['Altid tilgængelige'].push({ id: 'stableSign', name: 'Staldskilt', desc: 'Design jeres staldskilt eller våbenskjold. Bedømmes i showcasen.' });
+    g['Investering'].push({ id: 'inv-horse', name: 'Hest', desc: 'Køb fart. Hesten løfter terningens TOP — bedre chance for høje slag i løbet.' });
+    g['Investering'].push({ id: 'inv-jockey', name: 'Jockey', desc: 'Køb stabilitet. Jockeyen løfter terningens BUND — færre dårlige slag.' });
+    g['Investering'].push({ id: 'inv-stable', name: 'Stald', desc: 'Sikker investering: staldværdien stiger typisk mere end prisen. Påvirker ikke løbet.' });
+    return g;
   }
 
   // ---------- WARM-UP ----------
