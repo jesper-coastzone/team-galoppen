@@ -111,12 +111,64 @@
     return c;
   }
   function preseason() {
-    const c = el('div');
-    c.appendChild(el('div.eyebrow', { text: 'Planlægning' }));
-    c.appendChild(el('h1', { text: 'Pre-season' }));
-    c.appendChild(el('p.lead', { text: 'Læs opgaverne på jeres tablet, forstå strategien og planlæg jeres første træk.' }));
-    return c;
+    if (window.__psTourTimer) { clearInterval(window.__psTourTimer); window.__psTourTimer = null; }
+    const PS_CSS = '.ps-wrap{display:flex;gap:2vw;align-items:stretch}.ps-board{flex:1.3;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:1vw;background:linear-gradient(160deg,#2b5d40,#1c4a30);border-radius:20px;padding:1.4vw;border:3px solid #163d29;box-shadow:var(--shadow-lg)}.ps-tile{cursor:pointer;background:var(--cream);border-radius:14px;padding:1.1vw 1.2vw;display:flex;flex-direction:column;gap:.3vw;justify-content:center;opacity:.5;transition:transform .45s cubic-bezier(.2,.9,.3,1),box-shadow .45s,opacity .45s}.ps-tile .n{font-size:.85vw;letter-spacing:2px;text-transform:uppercase;color:var(--burgundy);font-weight:700}.ps-tile .t{font-family:var(--font-display);font-weight:800;font-size:1.5vw;color:var(--navy);line-height:1.05}.ps-tile.active{opacity:1;transform:scale(1.05);box-shadow:0 0 0 4px var(--gold),0 14px 34px rgba(0,0,0,.32)}.ps-panel{flex:1;background:var(--navy);color:var(--on-navy);border-radius:20px;padding:2vw;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow-lg)}.ps-panel .pe{font-size:1vw;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:700;margin-bottom:1vh}.ps-panel .pt{font-family:var(--font-display);font-size:2.8vw;line-height:1.05;margin-bottom:1.4vh}.ps-panel .pd{font-size:1.5vw;line-height:1.5;opacity:.93}.ps-dots{display:flex;gap:.6vw;margin-top:2.4vh}.ps-dots i{width:.9vw;height:.9vw;border-radius:50%;background:rgba(255,255,255,.28);transition:background .3s}.ps-dots i.on{background:var(--gold)}';
+    const stations = [
+      { n: 'Din base', t: 'Stalden', color: '#1F3E63', icon: TG.motif.horse('#1F3E63'), eyebrow: 'Station 1 · Stalden', desc: 'Her bor jeres hest og jockey. Giv dem navne, og gør stalden klar til sæsonen.' },
+      { n: 'Hver runde', t: 'Auktionshuset', color: '#6E1F2E', icon: hammerSvg(), eyebrow: 'Station 2 · Auktion', desc: 'I byder på 7 special-øvelser. I kan kun eje én ad gangen — men den kan sælges videre med gevinst.' },
+      { n: 'Tjen penge', t: 'Opgaverne', color: '#C9A227', icon: puzzleSvg(), eyebrow: 'Station 3 · Opgaver', desc: 'Tip en 13-er, Tidslinje og Dyst giver Staldollars. Byg puslespillet og få jeres Derby-licens.' },
+      { n: 'Bliv stærkere', t: 'Investering', color: '#2D4A3D', icon: chartSvg(), eyebrow: 'Station 4 · Investering', desc: 'Køb op i hest (fart), jockey (stabilitet) eller stald (sikker værdi). Hesten løfter terningens top, jockeyen dens bund.' },
+      { n: 'Payoff', t: 'Væddeløbsbanen', color: '#B83232', icon: flagSvg(), eyebrow: 'Station 5 · Løb', desc: 'Efter hver runde er der løb. I slår terninger — den bedste hest på banen vinder præmiepenge.' },
+      { n: 'Sådan vinder I', t: 'Staldværdien', color: '#C9A227', icon: TG.motif.compass('#C9A227'), eyebrow: 'Station 6 · Vinderen', desc: 'Den mest værdifulde stald vinder til sidst: kontanter + hest + jockey + stald. Ikke nødvendigvis løbsvinderen!' },
+    ];
+    const wrap = el('div');
+    wrap.appendChild(el('style', { html: PS_CSS }));
+    wrap.appendChild(el('div.eyebrow', { text: 'Pre-season · rundtur' }));
+    wrap.appendChild(el('h2', { text: 'Sådan spiller I', style: 'margin-bottom:2vh' }));
+    const row = el('div.ps-wrap');
+    const board = el('div.ps-board#psBoard');
+    stations.forEach((s, i) => {
+      const tile = el('div.ps-tile', { 'data-ps': String(i) }, [
+        el('div', { style: 'width:3vw;height:3vw', html: s.icon }),
+        el('div.n', { text: s.n }),
+        el('div.t', { text: s.t }),
+      ]);
+      tile.style.borderTop = '6px solid ' + s.color;
+      tile.addEventListener('click', () => setPsStep(i));
+      board.appendChild(tile);
+    });
+    const panel = el('div.ps-panel');
+    panel.appendChild(el('div.pe#psEye'));
+    panel.appendChild(el('div.pt#psTitle'));
+    panel.appendChild(el('div.pd#psDesc'));
+    const dots = el('div.ps-dots#psDots');
+    stations.forEach(() => dots.appendChild(el('i')));
+    panel.appendChild(dots);
+    row.appendChild(board); row.appendChild(panel);
+    wrap.appendChild(row);
+    window.__psStations = stations; window.__psStep = 0;
+    setTimeout(() => setPsStep(0), 0);
+    window.__psTourTimer = setInterval(() => {
+      if (!document.getElementById('psBoard')) { clearInterval(window.__psTourTimer); window.__psTourTimer = null; return; }
+      setPsStep((window.__psStep + 1) % stations.length);
+    }, 4200);
+    return wrap;
   }
+
+  function setPsStep(i) {
+    const stations = window.__psStations; if (!stations) return;
+    window.__psStep = i;
+    document.querySelectorAll('.ps-tile').forEach((n) => n.classList.toggle('active', Number(n.getAttribute('data-ps')) === i));
+    const s = stations[i];
+    const eye = document.getElementById('psEye'); const ti = document.getElementById('psTitle'); const de = document.getElementById('psDesc');
+    if (eye) eye.textContent = s.eyebrow; if (ti) ti.textContent = s.t; if (de) de.textContent = s.desc;
+    document.querySelectorAll('#psDots i').forEach((d, di) => d.classList.toggle('on', di === i));
+  }
+
+  function hammerSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="8" y="44" width="48" height="7" rx="2" fill="#6E1F2E"/><rect x="30" y="12" width="9" height="26" rx="3" transform="rotate(40 34 25)" fill="#6E1F2E"/><rect x="18" y="18" width="22" height="10" rx="3" transform="rotate(40 29 23)" fill="#B83232"/></svg>'; }
+  function puzzleSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="12" y="12" width="18" height="18" rx="3" fill="#C9A227"/><rect x="34" y="12" width="18" height="18" rx="3" fill="#1F3E63"/><rect x="12" y="34" width="18" height="18" rx="3" fill="#1F3E63"/><rect x="34" y="34" width="18" height="18" rx="3" fill="#C9A227"/></svg>'; }
+  function chartSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="12" y="34" width="9" height="18" rx="2" fill="#2D4A3D"/><rect x="27" y="24" width="9" height="28" rx="2" fill="#2D4A3D"/><rect x="42" y="14" width="9" height="38" rx="2" fill="#2D4A3D"/></svg>'; }
+  function flagSvg() { return '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect x="14" y="10" width="4" height="44" fill="#1F3E63"/><path d="M18 12 h30 v20 h-30 z" fill="#1F3E63"/><path d="M18 12 h10 v10 h-10 z M38 12 h10 v10 h-10 z M28 22 h10 v10 h-10 z" fill="#FAF6EA"/></svg>'; }
 
   // ---- setup / ready ----
   function stableSetup() {
