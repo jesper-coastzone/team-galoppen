@@ -4,6 +4,7 @@
  * enheder på samme netværk (tablets, projektor) kan forbinde via maskinens LAN-IP.
  */
 const path = require('path');
+const fs = require('fs');
 const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
@@ -24,18 +25,18 @@ function publicBase(req) {
   return `${proto}://${req.get('host')}`;
 }
 
-// Generér app-ikon (navy baggrund, guld kompas-disk) uden binære filer i repo'et.
+// Generér app-ikon (navy baggrund, guld hestesko) uden binære filer i repo'et.
 function makeIcon(size) {
   const png = new PNG({ width: size, height: size });
   const navy = [31, 62, 99], gold = [201, 162, 39], cream = [250, 246, 234];
-  const cx = size / 2, cy = size / 2, R = size * 0.34, dR = size * 0.30;
+  const cx = size / 2, cy = size * 0.52, outerR = size * 0.34, innerR = size * 0.205, gapHalf = size * 0.12;
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const i = (y * size + x) * 4;
     let c = navy;
     const dx = x - cx, dy = y - cy, dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist <= R) c = gold;
-    if (Math.abs(dx) + Math.abs(dy) <= dR && dist <= R) c = cream;
-    if (dist <= size * 0.05) c = navy;
+    const band = dist <= outerR && dist >= innerR;
+    const gap = dy < -size * 0.02 && Math.abs(dx) < gapHalf;
+    if (band && !gap) c = gold;
     png.data[i] = c[0]; png.data[i + 1] = c[1]; png.data[i + 2] = c[2]; png.data[i + 3] = 255;
   }
   return PNG.sync.write(png);
@@ -71,6 +72,8 @@ app.get('/qr.png', async (req, res) => {
 
 // App-ikon til PWA (installér på tablets).
 app.get('/icon.png', (req, res) => {
+  const file = path.join(PUBLIC, 'assets', 'app-ikon.png');
+  if (fs.existsSync(file)) return res.sendFile(file);
   const size = Math.max(48, Math.min(1024, Number(req.query.size) || 512));
   try { res.type('png').send(makeIcon(size)); } catch (e) { res.status(500).end(); }
 });
