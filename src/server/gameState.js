@@ -248,8 +248,15 @@ function auctionView(game, role, teamId) {
     isInAuctionHouse: e.isInAuctionHouse, successCount: e.successCount,
     nextReward: e.reward ? nextMoneyReward(e) : null,
   }));
-  if (!game.auction) return { status: 'none', exercises, bids: [] };
+  if (!game.auction) return { status: 'none', exercises, bids: [], topBids: [] };
   let bids = game.auction.bids;
+  // Højeste bud pr. øvelse — synligt for alle roller så man kan følge budkrigen live.
+  const byEx = new Map();
+  for (const b of game.auction.bids) {
+    const cur = byEx.get(b.exerciseId);
+    if (!cur || b.amount > cur.amount) byEx.set(b.exerciseId, b);
+  }
+  const topBids = [...byEx.values()].map((b) => ({ exerciseId: b.exerciseId, amount: b.amount, teamId: b.teamId }));
   if (role === 'team') bids = bids.filter((b) => b.teamId === teamId);
   else if (role === 'screen') bids = bids.map((b) => ({ exerciseId: b.exerciseId }));
   return {
@@ -258,6 +265,7 @@ function auctionView(game, role, teamId) {
     endsAt: game.timers.auction ? game.timers.auction.endsAt : null,
     results: game.auction.results || [],
     bids,
+    topBids,
     exercises,
   };
 }
